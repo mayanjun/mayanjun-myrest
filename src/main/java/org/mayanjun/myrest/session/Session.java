@@ -67,6 +67,12 @@ public class Session<T> {
      */
     private UserLoader<T> userLoader;
 
+    public Session(String domain, KeyPairStore keyPairStore, UserLoader<T> userLoader) {
+        this.domain = domain;
+        this.keyPairStore = keyPairStore;
+        this.userLoader = userLoader;
+    }
+
     public Session(String domain, KeyPairStore keyPairStore, String tokenName, UserLoader<T> userLoader) {
         this.domain = domain;
         this.keyPairStore = keyPairStore;
