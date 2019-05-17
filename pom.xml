@@ -25,7 +25,7 @@
 
     <scm>
         <url>http://mayanjun.org</url>
-        <connection>https://github.com/mayanjun/myjack.git</connection>
+        <connection>https://github.com/mayanjun/myrest.git</connection>
         <developerConnection>https://github.com/mayanjun</developerConnection>
     </scm>
 
@@ -37,6 +37,12 @@
         <dependency>
             <groupId>org.mayanjun</groupId>
             <artifactId>core</artifactId>
+            <version>${core.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mayanjun</groupId>
+            <artifactId>util</artifactId>
             <version>${core.version}</version>
         </dependency>
 
@@ -110,22 +116,15 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>myMavenRepoRead</id>
-            <url>https://mymavenrepo.com/repo/yJ6X94jwPa0KTAkGGJ8d/</url>
-        </repository>
-    </repositories>
-
     <distributionManagement>
-        <repository>
-            <id>myMavenRepo.write</id>
-            <url>https://mymavenrepo.com/repo/mn7EGW2PlO7iU3L7TXjc/</url>
-        </repository>
         <snapshotRepository>
-            <id>myMavenRepo.write</id>
-            <url>https://mymavenrepo.com/repo/mn7EGW2PlO7iU3L7TXjc/</url>
+            <id>oss</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
         </snapshotRepository>
+        <repository>
+            <id>oss</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
     </distributionManagement>
 
 </project>
