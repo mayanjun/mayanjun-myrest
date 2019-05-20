@@ -6,7 +6,7 @@
 
     <groupId>org.mayanjun</groupId>
     <artifactId>myrest</artifactId>
-    <version>0.0.1.alpha</version>
+    <version>0.0.1.RELEASE</version>
 
     <name>mayanjun-myrest</name>
     <description>myrest library</description>
@@ -34,20 +34,21 @@
     </scm>
 
     <properties>
-        <core.version>0.0.1.alpha</core.version>
+        <mayanjun.core.version>0.0.1.RELEASE</mayanjun.core.version>
+        <mayanjun.util.version>0.0.1.RELEASE</mayanjun.util.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.mayanjun</groupId>
             <artifactId>core</artifactId>
-            <version>${core.version}</version>
+            <version>${mayanjun.core.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.mayanjun</groupId>
             <artifactId>util</artifactId>
-            <version>${core.version}</version>
+            <version>${mayanjun.util.version}</version>
         </dependency>
 
         <dependency>
