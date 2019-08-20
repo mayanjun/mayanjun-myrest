@@ -19,8 +19,9 @@ package org.mayanjun.myrest.session;
 import org.mayanjun.core.Assert;
 import org.mayanjun.core.ServiceException;
 import org.mayanjun.core.Status;
-import org.mayanjun.util.Encryptions;
-import org.mayanjun.util.KeyPairStore;
+import org.mayanjun.util.AES;
+import org.mayanjun.util.SecretKeyStore;
+import org.springframework.beans.factory.annotation.Required;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -48,14 +49,9 @@ public class Session<T> {
     private String domain;
 
     /**
-     * 密钥对管理器
+     * AES 秘钥管理器，用来创建Cookie
      */
-    private KeyPairStore keyPairStore;
-
-    /**
-     * 用户登录超时时间：单位秒
-     */
-    private long loginTimeout;
+    private SecretKeyStore secretKeyStore;
 
     /**
      * 登录成功后的Cookie名称
@@ -70,23 +66,15 @@ public class Session<T> {
     public Session() {
     }
 
-    public Session(String domain, KeyPairStore keyPairStore, UserLoader<T> userLoader) {
+    public Session(String domain, SecretKeyStore keyPairStore, UserLoader<T> userLoader) {
         this.domain = domain;
-        this.keyPairStore = keyPairStore;
+        this.secretKeyStore = keyPairStore;
         this.userLoader = userLoader;
     }
 
-    public Session(String domain, KeyPairStore keyPairStore, String tokenName, UserLoader<T> userLoader) {
+    public Session(String domain, SecretKeyStore keyPairStore, String tokenName, UserLoader<T> userLoader) {
         this.domain = domain;
-        this.keyPairStore = keyPairStore;
-        this.tokenName = tokenName;
-        this.userLoader = userLoader;
-    }
-
-    public Session(String domain, KeyPairStore keyPairStore, long loginTimeout, String tokenName, UserLoader<T> userLoader) {
-        this.domain = domain;
-        this.keyPairStore = keyPairStore;
-        this.loginTimeout = loginTimeout;
+        this.secretKeyStore = keyPairStore;
         this.tokenName = tokenName;
         this.userLoader = userLoader;
     }
@@ -104,7 +92,7 @@ public class Session<T> {
         String token = getToken(request);
         Assert.notBlank(token, NO_SIGN_IN);
 
-        String uat = Encryptions.decrypt(token, this.keyPairStore.getPublicKey());
+        String uat = decryptToken(token);
         Assert.notBlank(uat, NO_SIGN_IN);
 
         String uats[] = uat.split(";");
@@ -130,7 +118,7 @@ public class Session<T> {
         SessionUser<T> loginUser = new SessionUser(user);
         loginUser.setOriginUser(user.getOriginUser());
         String cookiePlain = user.getUsername() + ";" + loginUser.getLastLoginTime();
-        String token = Encryptions.encrypt(cookiePlain, this.keyPairStore.getPrivateKey());
+        String token = encryptToken(cookiePlain);
 
         userLoader.setUserCache(loginUser);
         response.addCookie(createSigninCookie(token));
@@ -164,6 +152,7 @@ public class Session<T> {
         cookie.setPath("/");
         cookie.setMaxAge(3600 * 24 * 7);
         cookie.setVersion(1);
+        cookie.setHttpOnly(true);
         return cookie;
     }
 
@@ -177,35 +166,28 @@ public class Session<T> {
     }
 
     public String decryptPassword(String password) {
-        return Encryptions.decrypt(password, keyPairStore.getPrivateKey());
+        return AES.decryptString(password, secretKeyStore.iv(), secretKeyStore.key());
     }
 
     public String encryptPassword(String password) {
-        return Encryptions.encrypt(password, keyPairStore.getPublicKey());
+        return AES.encryptString(password, secretKeyStore.iv(), secretKeyStore.key());
+    }
+
+    public String encryptToken(String tokenPlain) {
+        return AES.encryptString(tokenPlain, secretKeyStore.iv(), secretKeyStore.key());
+    }
+
+    public String decryptToken(String token) {
+        return AES.decryptString(token, secretKeyStore.iv(), secretKeyStore.key());
     }
 
     public String getDomain() {
         return domain;
     }
 
+    @Required
     public void setDomain(String domain) {
         this.domain = domain;
-    }
-
-    public KeyPairStore getKeyPairStore() {
-        return keyPairStore;
-    }
-
-    public void setKeyPairStore(KeyPairStore keyPairStore) {
-        this.keyPairStore = keyPairStore;
-    }
-
-    public long getLoginTimeout() {
-        return loginTimeout;
-    }
-
-    public void setLoginTimeout(long loginTimeout) {
-        this.loginTimeout = loginTimeout;
     }
 
     public String getTokenName() {
@@ -224,5 +206,14 @@ public class Session<T> {
 
     public void setUserLoader(UserLoader<T> userLoader) {
         this.userLoader = userLoader;
+    }
+
+    public SecretKeyStore getSecretKeyStore() {
+        return secretKeyStore;
+    }
+
+    @Required
+    public void setSecretKeyStore(SecretKeyStore secretKeyStore) {
+        this.secretKeyStore = secretKeyStore;
     }
 }
