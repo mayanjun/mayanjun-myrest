@@ -6,7 +6,7 @@
 
     <groupId>org.mayanjun</groupId>
     <artifactId>mayanjun-myrest</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.1</version>
 
     <name>mayanjun-myrest</name>
     <description>myrest library</description>
