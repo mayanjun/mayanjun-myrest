@@ -16,204 +16,85 @@
 
 package org.mayanjun.myrest.session;
 
-import org.mayanjun.core.Assert;
-import org.mayanjun.core.ServiceException;
-import org.mayanjun.core.Status;
-import org.mayanjun.util.AES;
-import org.mayanjun.util.SecretKeyStore;
 import org.springframework.beans.factory.annotation.Required;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * WEB登录的session会话管理器
- * @author mayanjun
- * @since 28/02/2018
+ * Session manager
+ * @param <T>
  */
-public class Session<T> {
-
-    // about login
-    public static final Status NO_SIGN_IN = new Status(2001, "用户未登录");
-    public static Status USER_NOT_EXISTS = new Status(2002, "用户不存在");
-    public static Status PASSWORD_INCORRECT = new Status(2003, "密码错误");
-
-
-    public static final String DEFAULT_TOKEN_NAME = "mytoken";
-    private ThreadLocal<SessionUser<T>> currentUser = new ThreadLocal<SessionUser<T>>();
+public interface Session<T> {
 
     /**
-     * 系统的域名或者域
+     * Clear current sign in status
      */
-    private String domain;
+    void clear();
 
     /**
-     * AES 秘钥管理器，用来创建Cookie
+     * Returns current user
+     * @param request HttpServletRequest
+     * @return returns current user
      */
-    private SecretKeyStore secretKeyStore;
+    SessionUser<T> getUser(HttpServletRequest request);
 
     /**
-     * 登录成功后的Cookie名称
+     * Returns current user
+     * @return returns current user
      */
-    private String tokenName = DEFAULT_TOKEN_NAME;
+    SessionUser<T> getCurrentUser();
 
     /**
-     * 用户数据加载器
+     * Sign in and returns user
+     * @param username username
+     * @param password password
+     * @param response HttpServletResponse
+     * @return returns user
      */
-    private UserLoader<T> userLoader;
-
-    public Session() {
-    }
-
-    public Session(String domain, SecretKeyStore keyPairStore, UserLoader<T> userLoader) {
-        this.domain = domain;
-        this.secretKeyStore = keyPairStore;
-        this.userLoader = userLoader;
-    }
-
-    public Session(String domain, SecretKeyStore keyPairStore, String tokenName, UserLoader<T> userLoader) {
-        this.domain = domain;
-        this.secretKeyStore = keyPairStore;
-        this.tokenName = tokenName;
-        this.userLoader = userLoader;
-    }
+    SessionUser<T> signIn(String username, String password, HttpServletResponse response);
 
     /**
-     * 一个WEB请求结束后清除登录状态
+     * Sign out
+     * @param request HttpServletRequest
+     * @param response HttpServletResponse
      */
-    public void clear() {
-        currentUser.remove();
-    }
+    void signOut(HttpServletRequest request, HttpServletResponse response);
 
-    public SessionUser<T> getUser(HttpServletRequest request) {
-        currentUser.remove();
+    /**
+     * Returns domain
+     * @return domain
+     */
+    String getDomain();
 
-        String token = getToken(request);
-        Assert.notBlank(token, NO_SIGN_IN);
-
-        String uat = decryptToken(token);
-        Assert.notBlank(uat, NO_SIGN_IN);
-
-        String uats[] = uat.split(";");
-        SessionUser<T> user = userLoader.getUserFromCache(uats[0]);
-        Assert.notNull(user, NO_SIGN_IN);
-
-        currentUser.set(user);
-        return user;
-    }
-
-    public SessionUser<T> getCurrentUser() {
-        SessionUser<T> user = currentUser.get();
-        Assert.notNull(user, NO_SIGN_IN);
-        return user;
-    }
-
-    public SessionUser<T> signIn(String username, String password, HttpServletResponse response) {
-        SessionUser<T> user = userLoader.loadUser(username);
-        Assert.notNull(user, USER_NOT_EXISTS);
-        String dbPassword = decryptPassword(user.getPassword());
-        Assert.isTrue(password.equals(dbPassword), PASSWORD_INCORRECT);
-
-        SessionUser<T> loginUser = new SessionUser(user);
-        loginUser.setOriginUser(user.getOriginUser());
-        String cookiePlain = user.getUsername() + ";" + loginUser.getLastLoginTime();
-        String token = encryptToken(cookiePlain);
-
-        userLoader.setUserCache(loginUser);
-        response.addCookie(createSigninCookie(token));
-        return loginUser;
-    }
-
-    public void signOut(HttpServletRequest request, HttpServletResponse response) {
-        SessionUser<T> user = getUser(request);
-        userLoader.removeUserCache(user);
-        response.addCookie(createSignoutCookie());
-    }
-
-    private String getToken(HttpServletRequest request) throws ServiceException {
-        Cookie cookies[] = request.getCookies();
-        Assert.notNull(cookies, NO_SIGN_IN);
-        String token = null;
-        String cookieName = this.tokenName;
-        for(Cookie cookie : cookies) {
-            if(cookieName.equals(cookie.getName())) {
-                token = cookie.getValue();
-                break;
-            }
-        }
-        Assert.notEmpty(token, NO_SIGN_IN);
-        return token;
-    }
-
-    private Cookie createSigninCookie(String token) {
-        Cookie cookie = new Cookie(this.tokenName, token);
-        cookie.setDomain(this.domain);
-        cookie.setPath("/");
-        cookie.setMaxAge(3600 * 24 * 7);
-        cookie.setVersion(1);
-        cookie.setHttpOnly(true);
-        return cookie;
-    }
-
-    private Cookie createSignoutCookie() {
-        Cookie cookie = new Cookie(this.tokenName, "-");
-        cookie.setDomain(this.domain);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        cookie.setVersion(1);
-        return cookie;
-    }
-
-    public String decryptPassword(String password) {
-        return AES.decryptString(password, secretKeyStore.iv(), secretKeyStore.key());
-    }
-
-    public String encryptPassword(String password) {
-        return AES.encryptString(password, secretKeyStore.iv(), secretKeyStore.key());
-    }
-
-    public String encryptToken(String tokenPlain) {
-        return AES.encryptString(tokenPlain, secretKeyStore.iv(), secretKeyStore.key());
-    }
-
-    public String decryptToken(String token) {
-        return AES.decryptString(token, secretKeyStore.iv(), secretKeyStore.key());
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
+    /**
+     * Set domain
+     * @param domain domain
+     */
     @Required
-    public void setDomain(String domain) {
-        this.domain = domain;
-    }
+    void setDomain(String domain);
 
-    public String getTokenName() {
-        return tokenName;
-    }
+    /**
+     * Returns token name
+     * @return token name
+     */
+    String getTokenName();
 
-    public void setTokenName(String tokenName) {
-        if(tokenName != null && !tokenName.trim().isEmpty()) {
-            this.tokenName = tokenName;
-        }
-    }
+    /**
+     * Set token name
+     * @param tokenName token name
+     */
+    void setTokenName(String tokenName);
 
-    public UserLoader<T> getUserLoader() {
-        return userLoader;
-    }
+    /**
+     * Returns user loader
+     * @return user loader
+     */
+    UserLoader<T> getUserLoader();
 
-    public void setUserLoader(UserLoader<T> userLoader) {
-        this.userLoader = userLoader;
-    }
-
-    public SecretKeyStore getSecretKeyStore() {
-        return secretKeyStore;
-    }
-
-    @Required
-    public void setSecretKeyStore(SecretKeyStore secretKeyStore) {
-        this.secretKeyStore = secretKeyStore;
-    }
+    /**
+     * Set user loader
+     * @param userLoader user loader
+     */
+    void setUserLoader(UserLoader<T> userLoader);
 }
