@@ -71,7 +71,7 @@ public abstract class AbstractSession<T> implements Session<T> {
         Cookie cookies[] = request.getCookies();
         Assert.notNull(cookies, NO_SIGN_IN);
         String token = null;
-        String cookieName = this.tokenName;
+        String cookieName = this.getTokenName();
         for(Cookie cookie : cookies) {
             if(cookieName.equals(cookie.getName())) {
                 token = cookie.getValue();
@@ -107,8 +107,8 @@ public abstract class AbstractSession<T> implements Session<T> {
     }
 
     protected Cookie createSigninCookie(String token) {
-        Cookie cookie = new Cookie(this.tokenName, token);
-        cookie.setDomain(this.domain);
+        Cookie cookie = new Cookie(this.getTokenName(), token);
+        cookie.setDomain(this.getDomain());
         cookie.setPath("/");
         cookie.setMaxAge(3600 * 24 * 7);
         cookie.setVersion(1);
@@ -117,8 +117,8 @@ public abstract class AbstractSession<T> implements Session<T> {
     }
 
     protected Cookie createSignoutCookie() {
-        Cookie cookie = new Cookie(this.tokenName, "-");
-        cookie.setDomain(this.domain);
+        Cookie cookie = new Cookie(this.getTokenName(), "-");
+        cookie.setDomain(this.getDomain());
         cookie.setPath("/");
         cookie.setMaxAge(0);
         cookie.setVersion(1);
