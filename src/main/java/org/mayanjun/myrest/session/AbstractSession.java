@@ -12,9 +12,7 @@ public abstract class AbstractSession<T> implements Session<T> {
 
     // about login
     public static final Status NO_SIGN_IN = new Status(2001, "用户未登录");
-    public static Status USER_NOT_EXISTS = new Status(2002, "用户不存在");
-    public static Status PASSWORD_INCORRECT = new Status(2003, "密码错误");
-
+    public static Status USERNAME_OR_PASSWORD_INCORRECT = new Status(2002, "用户名或密码错误");
 
     public static final String DEFAULT_TOKEN_NAME = "mytoken";
     private ThreadLocal<SessionUser<T>> currentUser = new ThreadLocal<SessionUser<T>>();
@@ -94,9 +92,9 @@ public abstract class AbstractSession<T> implements Session<T> {
     @Override
     public SessionUser<T> signIn(String username, String password, HttpServletResponse response) {
         SessionUser<T> user = userLoader.loadUser(username);
-        Assert.notNull(user, USER_NOT_EXISTS);
+        Assert.notNull(user, USERNAME_OR_PASSWORD_INCORRECT);
         String dbPassword = decryptPassword(user.getPassword());
-        Assert.isTrue(password.equals(dbPassword), PASSWORD_INCORRECT);
+        Assert.isTrue(password.equals(dbPassword), USERNAME_OR_PASSWORD_INCORRECT);
 
         SessionUser<T> loginUser = new SessionUser(user);
         loginUser.setOriginUser(user.getOriginUser());
