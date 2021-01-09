@@ -16,8 +16,7 @@
 
 package org.mayanjun.myrest.session;
 
-import org.mayanjun.util.AES;
-import org.mayanjun.util.SecretKeyStore;
+import org.mayanjun.util.Crypto;
 import org.springframework.beans.factory.annotation.Required;
 
 /**
@@ -27,52 +26,49 @@ import org.springframework.beans.factory.annotation.Required;
  */
 public class AESSession<T> extends AbstractSession<T> {
 
-    /**
-     * AES 秘钥管理器，用来创建Cookie
-     */
-    private SecretKeyStore secretKeyStore;
+    private Crypto crypto;
 
 
     public AESSession() {
         super();
     }
 
-    public AESSession(String domain, SecretKeyStore keyPairStore, UserLoader<T> userLoader) {
+    public AESSession(String domain, Crypto crypto, UserLoader<T> userLoader) {
         super(domain, DEFAULT_TOKEN_NAME, userLoader);
-        this.secretKeyStore = keyPairStore;
+        this.crypto = crypto;
     }
 
-    public AESSession(String domain, SecretKeyStore keyPairStore, String tokenName, UserLoader<T> userLoader) {
+    public AESSession(String domain, Crypto crypto, String tokenName, UserLoader<T> userLoader) {
         super(domain, tokenName, userLoader);
-        this.secretKeyStore = keyPairStore;
+        this.crypto = crypto;
     }
 
     @Override
     public String decryptPassword(String password) {
-        return AES.decryptString(password, secretKeyStore.iv(), secretKeyStore.key());
+        return crypto.decrypt(password);
     }
 
     @Override
     public String encryptPassword(String password) {
-        return AES.encryptString(password, secretKeyStore.iv(), secretKeyStore.key());
+        return crypto.encrypt(password);
     }
 
     @Override
     public String encryptToken(String tokenPlain) {
-        return AES.encryptString(tokenPlain, secretKeyStore.iv(), secretKeyStore.key());
+        return crypto.encrypt(tokenPlain);
     }
 
     @Override
     public String decryptToken(String token) {
-        return AES.decryptString(token, secretKeyStore.iv(), secretKeyStore.key());
+        return crypto.decrypt(token);
     }
 
-    public SecretKeyStore getSecretKeyStore() {
-        return secretKeyStore;
+    public Crypto crypto() {
+        return this.crypto;
     }
 
     @Required
-    public void setSecretKeyStore(SecretKeyStore secretKeyStore) {
-        this.secretKeyStore = secretKeyStore;
+    public void setCrypto(Crypto crypto) {
+        this.crypto = crypto;
     }
 }
