@@ -110,7 +110,7 @@ public abstract class AbstractSession<T> implements Session<T> {
         Cookie cookie = new Cookie(this.getTokenName(), token);
         cookie.setDomain(this.getDomain());
         cookie.setPath("/");
-        cookie.setMaxAge(3600 * 24 * 7);
+        cookie.setMaxAge(-1);
         cookie.setVersion(1);
         cookie.setHttpOnly(true);
         return cookie;
